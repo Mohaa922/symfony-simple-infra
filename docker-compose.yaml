@@ -1,0 +1,47 @@
+services:
+  app:
+    container_name: simple-app
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8085:80"
+    env_file:
+      - .env.compose
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_DEBUG: ${APP_DEBUG}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      # On monte le code du repo APP dans le conteneur
+      - ../symfony-simple-app:/var/www/html:rw,delegated
+      - app_var:/var/www/html/var
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  mysql:
+    container_name: simple-mysql
+    image: mysql:8.4
+    restart: unless-stopped
+    env_file:
+      - .env.compose
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3308:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+  app_var:
